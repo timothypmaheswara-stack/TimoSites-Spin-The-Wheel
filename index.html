@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+<!-- Apple icons -->
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">  
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">  
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+
+ <!-- Manifest for Android/PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin the Wheel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --bg-color: #eee;
+  --panel-bg: #fff;
+  --text-color: #000;
+  --color-panel-bg: #f5f5f5;
+}
+body.dark {
+  --bg-color: #1e1e1e;
+  --panel-bg: #2c2c2c;
+  --text-color: #eee;
+  --color-panel-bg: #3a3a3a;
+}
+body, .panel, canvas, button, .modalContent {
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+body {
+  font-family: Arial, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  text-align: center;
+  margin:0;
+}
+.panel {
+  background: var(--panel-bg);
+  padding: 20px;
+  margin: 20px auto;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+canvas {
+  margin-top: 20px;
+  border: 3px solid #444;
+  background: #fff;
+  width: 90vw;
+  max-width: 450px;
+  cursor: pointer;
+}
+textarea {
+  width: 100%;
+  height: 120px;
+  margin-bottom: 15px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+button {
+  padding:10px;
+  margin:5px;
+  cursor:pointer;
+  border-radius:4px;
+  border:1px solid #888;
+  background: #eee;
+}
+.btnGroup {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.btnGroup button {
+  flex: 1 1 120px;
+  max-width: 160px;
+}
+body.dark button { background:#333; border:1px solid #666; color:#fff; }
+#colorInputs {
+  display:flex;
+  overflow-x:auto;
+  gap:10px;
+  padding:10px;
+  margin-bottom:10px;
+  background: var(--color-panel-bg);
+  border-radius:6px;
+}
+.colorItem {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-width:70px;
+  text-align:center;
+  font-size:12px;
+}
+#savedPanel { text-align:left; margin-bottom: 20px; }
+#darkToggle {
+  position:fixed;
+  top:10px; right:10px;
+  padding:8px 12px;
+  background:rgba(0,0,0,0.2);
+  border:none; border-radius:6px;
+  color:white; z-index:1000;
+}
+body.dark #darkToggle { background: rgba(255,255,255,0.2); color:black; }
+/* Modal */
+#modal {
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  justify-content:center; align-items:center;
+  z-index:1000;
+}
+.modalContent {
+  background:white;
+  padding:20px;
+  border-radius:8px;
+  text-align:center;
+}
+body.dark .modalContent { background:#222; color:#fff; }
+#spinBtn {
+  background: #4caf50;
+  color: white;
+  font-weight: bold;
+  border: none;
+}
+#spinAgainBtn { background:#4caf50; color:white; }
+#removeBtn { background:#f44336; color:white; }
+#closeBtn { background:#777; color:white; }
+#topLeftControls {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px; /* 👈 LESS SPACE BETWEEN BUTTONS */
+  z-index: 2000;
+}
+
+#topLeftControls button {
+  padding: 4px 8px; /* 👈 SMALLER BUTTON */
+  font-size: 11px;  /* 👈 SMALLER TEXT */
+  border-radius: 5px;
+  opacity: 0.8;
+}
+#menuBtn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 2000;
+  padding: 10px 12px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(0,0,0,0.2);
+  color: white;
+}
+
+body.dark #menuBtn {
+  background: rgba(255,255,255,0.2);
+  color: black;
+}
+#menuModal {
+  display: none;
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1500;
+}
+
+.menuContent {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  min-width: 200px;
+}
+
+body.dark .menuContent {
+  background: #222;
+  color: #fff;
+}
+#modsModal {
+  display: none;
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+#loadingScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #007BFF; /* nice blue */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  z-index: 9999;
+
+  opacity: 1;
+  transition: opacity 0.8s ease;
+}
+
+/* hidden state */
+#loadingScreen.fade-out {
+  opacity: 0;
+}
+#loadingBar {
+  width: 200px;
+  height: 10px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+#loadingFill {
+  width: 0%;
+  height: 100%;
+  background: white;
+  border-radius: 10px;
+  transition: width 0.3s linear;
+}
+#loadingText {
+  transition: opacity 0.2s;
+}
+</style>
+</head>
+<body>
+    
+    <div id="loadingScreen">
+  <h1><i class="fa fa-spin fa-sync"></i> Spin The Wheel</h1>
+  <p>by TimoDoesDabs Studios</p>
+  <p id="loadingText">Loading...</p>
+  
+  <div id="loadingBar">
+    <div id="loadingFill"></div>
+  </div>
+</div>
+
+<script>
+const fill = document.getElementById("loadingFill");
+const screen = document.getElementById("loadingScreen");
+
+let progress = 0;
+
+function fakeLoad() {
+  if (progress < 95) {
+    progress += Math.random() * 10;
+    fill.style.width = progress + "%";
+
+    setTimeout(fakeLoad, Math.random() * 400 + 200);
+
+  } else {
+    // Step 1: go to 100%
+    progress = 100;
+    fill.style.width = "100%";
+
+    // Step 2: WAIT for the bar animation to visually finish
+    setTimeout(() => {
+
+      // Step 3: fade AFTER animation
+      screen.classList.add("fade-out");
+
+      setTimeout(() => {
+        screen.style.display = "none";
+      }, 800);
+
+    }, 300); // <-- THIS is the key (matches animation time)
+  }
+}
+
+fakeLoad();
+</script>
+<script>
+const texts = [
+  "Loading..",
+  "Loading.",
+  "Loading",
+  "Loading.",
+  "Loading..",
+  "Loading..."
+];
+
+let i = 0;
+
+setInterval(() => {
+  document.getElementById("loadingText").innerText = texts[i % texts.length];
+  i++;
+}, 500);
+</script>
+    
+<button id="menuBtn"><i class="fa-solid fa-list"></i></button>
+
+<h2><i class="fas fa-circle-notch fa-spin"></i> Spin the Wheel</h2>
+<select id="themeSelect" 
+        style="position:fixed; top:10px; right:10px; z-index:1000; padding:6px; border-radius:6px; opacity:0.8;">
+  <option value="light">☀️ Light</option>
+  <option value="dark">🌙 Dark</option>
+  <option value="system">💻 System</option>
+  <option value="daylight">🌅 Daylight</option>
+</select>
+
+<canvas id="wheel" width="450" height="450" style="opacity:1;"></canvas>
+
+<div class="panel">
+<textarea id="optionsInput">Apple
+Banana
+Kiwi
+Grape
+Orange</textarea>
+
+<label><i class="fa-solid fa-palette"></i> Outline Color:</label>
+<input type="color" id="outlineColor" value="#000000"><br><br>
+<label><input type="checkbox" id="toggleOutline" checked> Show Outlines</label><br><br>
+<label><i class="fa-regular fa-circle"></i> Center Color:</label>
+<input type="color" id="centerColor" value="#ffffff"><br><br>
+<label><i class="fa-solid fa-expand"></i> Center Size:</label>
+<input type="range" id="centerSize" min="20" max="120" value="60"><br><br>
+
+<div id="colorInputs"></div>
+
+<div class="btnGroup">
+  <button id="spinBtn">SPIN <i class="fa fa-spin fa-sync"></i></button>
+  <button id="shuffleBtn">Shuffle <i class="fa fa-random"></i></button>
+  <button id="sortAZBtn">Sort <i class="fa fa-sort-alpha-down"></i></button>
+  <button id="sortZABtn">Sort <i class="fa fa-sort-alpha-up"></i></button>
+  <button id="randomColorsBtn">Randomize Colors <i class="fa fa-palette"></i></button>
+  <button id="generateBtn">Randomize Wheel <i class="fa fa-dharmachakra"></i></button>
+  <button id="removeDuplicatesBtn">
+  Remove Duplicates <i class="fa-solid fa-broom"></i>
+</button>
+</div>
+
+<div class="btnGroup">
+  <button id="saveBtn">Save Wheel <i class="fa fa-floppy-disk"></i></button>
+  <button id="clearBtn">Clear <i class="fa fa-times"></i></button>
+  
+  <label><i class="fa-solid fa-gauge-high"></i> Spin Speed:</label>
+<div style="display:flex; align-items:center; gap:10px; justify-content:center;">
+  <input type="range" id="spinSpeed" min="1" max="5" value="3">
+  <span id="speedLabel" style="display:inline-block; width:110px; text-align:left;">Normal</span>
+</div>
+<br><br><br>
+</div>
+</div>
+
+<button id="exportBtn"><i class="fa-solid fa-file-export"></i> Export</button>
+<button id="importBtn"><i class="fa-solid fa-file-import"></i> Import</button>
+
+<div id="importPanel" style="display:none; margin-top:10px;">
+  <input id="importInput" type="text" placeholder="Paste JSON here" style="width:70%; padding:5px; border-radius:4px; border:1px solid #888;">
+  <button id="importLoadBtn" style="padding:6px 10px; margin-left:5px;"><i class="fa-solid fa-folder-open"></i> Load</button>
+</div>
+
+<h3><i class="fa-solid fa-folder-plus"></i> Saved Wheels</h3>
+<div id="savedPanel" class="panel"></div>
+
+<h3><i class="fa-solid fa-bullseye"></i> Result History</h3>
+<div class="btnGroup">
+  <button id="clearHistoryBtn"><i class="fa-solid fa-trash-can"></i> Clear All</button>
+</div>
+<div id="historyPanel" class="panel" style="max-height:200px; overflow-y:auto;"></div>
+
+<!-- Result Modal -->
+<div id="modal">
+  <div class="modalContent">
+    <h3 id="winnerText"></h3>
+    <div style="display:flex; gap:10px; justify-content:center;">
+  <button id="spinAgainBtn"><i class="fa-solid fa-rotate-right"></i> Spin Again</button>
+  <button id="removeBtn"><i class="fa-solid fa-xmark"></i> Remove Result</button>
+  <button id="closeBtn">Close</button>
+</div>
+  </div>
+</div>
+<div id="menuModal">
+  <div class="menuContent">
+    <h3><i class="fa-solid fa-list"></i> Menu</h3>
+
+    <button id="muteBtn"><i class="fa fa-volume-up"></i> Sound ON</button>
+    <button id="shareBtn"><i class="fa-solid fa-share-nodes"></i> Share</button>
+    <button id="eliminateModeBtn"><i class="fa fa-bomb"></i> Eliminate Mode: OFF</button>
+    <button id="moreModsBtn"><i class="fa fa-puzzle-piece"></i> More Mods</button>
+    <div id="modsModal">
+  <div class="menuContent">
+    <h3><i class="fa fa-puzzle-piece"></i> Mods</h3>
+
+    <div id="modsList"></div>
+    
+
+    <br>
+    <button id="closeModsBtn">Close</button>
+  </div>
+</div>
+
+    <br><br>
+    <button id="closeMenuBtn">Close</button>
+  </div>
+</div>
+
+<script>
+/* ---------------------------
+  VARIABLES
+--------------------------- */
+let removingIndex = null;
+let removeProgress = 0; // 0 → 1
+let lastWinnerIndex = null;
+let segments = [];
+let colors = [];
+let angle = 0, spinning = false, velocity = 0;
+let winnerTimeout = null, pointerAngle = 0, lastTickIndex = -1;
+let idleSpin = true;
+let lastDuplicates = [];
+let isMuted = false;
+let eliminateMode = false;
+
+const modsList = document.getElementById("modsList");
+const modStates = {
+  colorfulPointer: JSON.parse(localStorage.getItem("mod_colorfulPointer")) || false,          
+  }; 
+  
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+const center = canvas.width/2;
+
+const tickSound = new Audio("click.wav");
+const buttonSound = new Audio("button-click.wav"); // ← new sound for clicks
+
+const fixedColors = ["#f44336","#ff9800","#4caf50","#9c27b0","#2196f3"];
+const wordCategories = {
+  fruits: [
+    "Apple","Banana","Orange","Mango","Grape","Pineapple","Strawberry","Watermelon","Papaya","Guava",
+    "Peach","Cherry","Pear","Plum","Kiwi","Lemon","Lime","Coconut","Blueberry","Raspberry",
+    "Blackberry","Dragonfruit","Lychee","Durian","Jackfruit","Melon","Apricot","Fig","Date","Passionfruit",
+    "Tangerine","Cranberry","Pomegranate","Starfruit","Persimmon","Mulberry","Gooseberry","Longan","Rambutan","Salak",
+    "Avocado","Tomato","Olive","Soursop","Mangosteen","Breadfruit","Sapodilla","Quince","Kumquat","Uglifruit",
+    "Nectarine","Bilberry","Cloudberry","Elderberry","Boysenberry","Currant","Miraclefruit","Plantain","Jujube","Feijoa",
+    "Ackee","Medlar","Huckleberry","Cempedak","Langsat","Santol","Tamarind","Bael","Carambola","Kaffirlime",
+    "Fingerlime","Marionberry","Wineberry","Surinamcherry","Serviceberry","Juneberry","Rowan","SeaBuckthorn","Yuzu","Calamansi",
+    "Pomelo","Canistel","Sapote","Lucuma","Chico","Mamoncillo","Pepino","Pitaya","Pitanga","Physalis",
+    "Salmonberry","Thimbleberry","Whitecurrant","Redcurrant","Blackcurrant","Greengage","Damson","Loquat","Nance","Cupuaçu",
+    "Araza","Babaco","Bignay","Burdekinplum","Cupuacu","Desertlime","Emuapple","Illawarraplum","Jaboticaba","Kakaduplum",
+    "Lillypilly","Muntries","Quandong","Riberry","Tasmanianpepper","Wampee","Yangmei","Ziziphus","Cactusfruit","Chokeberry",
+    "Cranapple","Foxgrape","Groundcherry","Hackberry","Indianfig","Mayapple","Mountainash","Sandcherry","Snowberry","Wildplum",
+    "Woodapple","Yellowpassionfruit","Zinfandelgrape","Blackplum","Redbanana","Sugarapple","Iceapple","Velvetapple","Roseapple","Malayapple"
+  ],
+
+  animals: [
+    "Dog","Cat","Tiger","Lion","Elephant","Giraffe","Zebra","Monkey","Panda","Bear",
+    "Wolf","Fox","Rabbit","Deer","Horse","Cow","Goat","Sheep","Pig","Chicken",
+    "Duck","Goose","Turkey","Eagle","Hawk","Falcon","Owl","Parrot","Penguin","Flamingo",
+    "Peacock","Swan","Crow","Raven","Sparrow","Pigeon","Dolphin","Whale","Shark","Octopus",
+    "Squid","Crab","Lobster","Shrimp","Starfish","Seal","SeaLion","Walrus","Otter","Beaver",
+    "Squirrel","Chipmunk","Hamster","Rat","Mouse","Kangaroo","Koala","Wombat","Platypus","Crocodile",
+    "Alligator","Lizard","Snake","Turtle","Frog","Toad","Salamander","Ant","Bee","Wasp",
+    "Butterfly","Moth","Spider","Scorpion","Beetle","Dragonfly","Grasshopper","Locust","Termite","Ladybug",
+    "Firefly","Centipede","Millipede","Horsefly","Mosquito","Tick","Flea","Camel","Donkey","Yak",
+    "Buffalo","Bison","Moose","Reindeer","Gazelle","Antelope","Hyena","Leopard","Cheetah","Jaguar",
+    "Panther","Badger","Weasel","Ferret","Mink","Skunk","Armadillo","Sloth","Anteater","Hedgehog",
+    "Porcupine","Raccoon","Possum","Opossum","Tapir","Okapi","Ibex","Chamois","Tarsier","Lemur",
+    "Ayeaye","Mandrill","Baboon","Chimpanzee","Gorilla","Orangutan","Macaw","Cockatoo","Toucan","Pelican",
+    "Albatross","Heron","Stork","Ibis","Kingfisher","Woodpecker","Finch","Canary","Bluejay","Cardinal",
+    "Seahorse","Clownfish","Angelfish","Barracuda","Swordfish","Stingray","Manta","Pufferfish","Eel","Catfish"
+  ],
+
+  foods: [
+    "Pizza","Burger","Fries","Hotdog","Sandwich","Pasta","Spaghetti","Noodles","Rice","Friedrice",
+    "Sushi","Ramen","Udon","Tempura","Curry","Soup","Steak","Chicken","Beef","Pork",
+    "Fish","Salad","Omelette","Egg","Bread","Toast","Pancake","Waffle","Donut","Cake",
+    "Cupcake","Brownie","Cookie","Icecream","Chocolate","Candy","Popcorn","Nachos","Taco","Burrito",
+    "Quesadilla","Dumpling","Springroll","Dimsum","Satay","Bakso","Soto","Rendang","GadoGado","NasiGoreng",
+    "Martabak","Pempek","Lumpia","AyamGeprek","Bubur","Kebab","Falafel","Hummus","Shawarma","Paella",
+    "Lasagna","Macaroni","Cheese","Risotto","Gnocchi","Meatball","Sausage","Ham","Bacon","Salmon",
+    "Tuna","Shrimp","Crab","Lobster","Clam","Oyster","Mussel","Seaweed","Tofu","Tempeh",
+    "Kimchi","Bibimbap","Tteokbokki","Hotpot","Fondue","Casserole","Pie","Quiche","Croissant","Baguette",
+    "Pretzel","Bagel","Muffin","Granola","Cereal","Yogurt","Milkshake","Smoothie","Juice","Soda",
+    "Tea","Coffee","Espresso","Latte","Cappuccino","Mocha","Frappe","Bubbletea","Milk","Water",
+    "Cheesecake","Pudding","Custard","Gelato","Sorbet","Truffle","Marshmallow","Jelly","Jam","Honey",
+    "Peanutbutter","Nutella","Churros","Crepe","Eclair","Souffle","Pavlova","Tiramisu","Cannoli","Brownies"
+  ]
+};
+/* ---------------------------
+  UTILS
+--------------------------- */
+function randomColor(){ return "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6,"0"); }
+
+function showNotification(text = '<i class="fa fa-check"></i> Done!') {
+  const notif = document.createElement("div");
+  notif.innerHTML = text;
+  notif.style.position = "fixed";
+  notif.style.bottom = "20px";
+  notif.style.right = "20px";
+  notif.style.background = "#888";
+  notif.style.color = "#fff";
+  notif.style.padding = "10px 15px";
+  notif.style.borderRadius = "6px";
+  notif.style.opacity = "1";
+  notif.style.zIndex = "2000";
+  notif.style.transition = "opacity 1.5s";
+  document.body.appendChild(notif);
+
+  // --- Mini confetti from notif ---
+  const rect = notif.getBoundingClientRect();
+  for (let i = 0; i < 20; i++) {
+    const confetti = document.createElement("div");
+    confetti.style.position = "fixed";
+    confetti.style.width = "6px";
+    confetti.style.height = "6px";
+    confetti.style.background = "#"+Math.floor(Math.random()*16777215).toString(16).padStart(6,"0");
+    confetti.style.left = rect.left + rect.width/2 + (Math.random()*40-20) + "px";
+    confetti.style.top = rect.top + "px";
+    confetti.style.opacity = Math.random();
+    confetti.style.borderRadius = "50%";
+    confetti.style.pointerEvents = "none";
+    confetti.style.transition = "top 1.5s ease-out, opacity 1.5s ease-out";
+    document.body.appendChild(confetti);
+
+    setTimeout(() => {
+      confetti.style.top = rect.top - 40 + "px";
+      confetti.style.opacity = 0;
+    }, 10);
+    setTimeout(() => confetti.remove(), 1100);
+  }
+
+  // Fade out notification
+  setTimeout(() => { notif.style.opacity = "0"; }, 1200);
+  setTimeout(() => { notif.remove(); }, 1700);
+}
+
+/* ---------------------------
+  THEME SYSTEM
+--------------------------- */
+const themeSelect = document.getElementById("themeSelect");
+
+// detect system dark mode
+function isSystemDark(){
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+// apply theme
+function applyTheme(mode){
+  document.body.classList.remove("dark");
+
+  if(mode === "dark"){
+    document.body.classList.add("dark");
+  }
+
+  if(mode === "system"){
+    if(isSystemDark()) document.body.classList.add("dark");
+  }
+
+  if(mode === "daylight"){
+  // Function to update theme based on sunrise/sunset
+  function updateDaylightTheme(lat, lon){
+    const now = new Date();
+    const times = SunCalc.getTimes(now, lat, lon);
+    if(now >= times.sunrise && now < times.sunset){
+      document.body.classList.remove("dark"); // day
+    } else {
+      document.body.classList.add("dark"); // night
+    }
+  }
+
+  // Ask for user location
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        updateDaylightTheme(lat, lon); // first check
+
+        // Update every minute
+        setInterval(() => updateDaylightTheme(lat, lon), 60*1000);
+      },
+      (err) => {
+        console.warn("Location denied or unavailable, fallback to UTC.");
+        updateDaylightTheme(0,0); // fallback if denied
+      }
+    );
+  } else {
+    updateDaylightTheme(0,0); // fallback if no geolocation support
+    }
+  }
+}
+
+// load saved theme
+let savedTheme = localStorage.getItem("theme") || "light";
+themeSelect.value = savedTheme;
+applyTheme(savedTheme);
+
+// on change
+themeSelect.onchange = ()=>{
+  const mode = themeSelect.value;
+  localStorage.setItem("theme", mode);
+  applyTheme(mode);
+};
+
+// update if system theme changes
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{
+  if(themeSelect.value === "system"){
+    applyTheme("system");
+  }
+});
+
+/* ---------------------------
+  DRAW WHEEL
+--------------------------- */
+function drawWheel(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const n = segments.length;
+  if(n===0) return;
+  const arc = 2*Math.PI/(n - (removingIndex !== null ? removeProgress : 0));
+  for(let i=0;i<n;i++){
+    ctx.beginPath();
+    ctx.moveTo(center,center);
+    ctx.arc(center,center,center,angle+i*arc,angle+(i+1)*arc);
+    ctx.fillStyle = colors[i] || randomColor();
+    ctx.fill();
+    if(document.getElementById("toggleOutline").checked){
+      ctx.strokeStyle=document.getElementById("outlineColor").value; ctx.lineWidth=2; ctx.stroke();
+    }
+    ctx.save(); ctx.translate(center,center); ctx.rotate(angle+(i+0.5)*arc);
+    let fontSize = Math.min(18,Math.max(8,280/n));
+    ctx.font="bold "+fontSize+"px Arial";
+    while(ctx.measureText(segments[i]).width>center*0.5 && fontSize>8){ fontSize--; ctx.font="bold "+fontSize+"px Arial"; }
+    ctx.fillStyle="#000"; ctx.textAlign="right"; ctx.fillText(segments[i], center-10,5);
+    ctx.restore();
+  }
+  const cSize = document.getElementById("centerSize").value;
+  ctx.beginPath(); ctx.arc(center,center,cSize,0,Math.PI*2); ctx.fillStyle=document.getElementById("centerColor").value; ctx.fill();
+  if(spinning){ pointerAngle = Math.sin(Date.now()/200)*0.15; } else { pointerAngle *= 0.8; }
+  // idle slow spin
+if(!spinning && idleSpin){
+  angle += 0.002; // slow smooth rotation
+}
+  ctx.save();
+ctx.translate(center,0);
+ctx.rotate(pointerAngle);
+
+let pointerColor = "black";
+
+if(modStates.colorfulPointer && segments.length > 0){
+  const arc = 2 * Math.PI / segments.length;
+  let normalized = (angle % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+  let index = Math.floor(normalized / arc);
+
+  let baseColor = colors[index];
+
+  function darken(hex){
+    let r = parseInt(hex.substr(1,2),16);
+    let g = parseInt(hex.substr(3,2),16);
+    let b = parseInt(hex.substr(5,2),16);
+
+    r = Math.floor(r * 0.6);
+    g = Math.floor(g * 0.6);
+    b = Math.floor(b * 0.6);
+
+    return `rgb(${r},${g},${b})`;
+  }
+
+  pointerColor = darken(baseColor);
+}
+
+ctx.fillStyle = pointerColor;
+  ctx.beginPath(); ctx.moveTo(-10,10); ctx.lineTo(10,10); ctx.lineTo(0,35); ctx.fill(); ctx.restore();
+}
+
+/* ---------------------------
+  UPDATE OPTIONS
+--------------------------- */
+function updateOptions(){
+  segments = document.getElementById("optionsInput").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  const div=document.getElementById("colorInputs");
+  div.innerHTML="";
+  colors = segments.map((s,i)=>{
+    const wrapper=document.createElement("div"); 
+    wrapper.className="colorItem";
+    const label=document.createElement("span"); 
+    label.innerText=s;
+    const input=document.createElement("input"); 
+    input.type="color";
+
+    // ← HERE IS THE FIX
+    input.value = fixedColors[i % fixedColors.length];
+    
+    input.oninput = ()=>{
+        colors[i]=input.value; 
+        drawWheel(); 
+        saveState();
+        checkDuplicates();
+    };
+
+    wrapper.appendChild(label); 
+    wrapper.appendChild(input); 
+    div.appendChild(wrapper);
+    return input.value;
+});
+  drawWheel(); 
+saveState();
+checkDuplicates(); // ← ADD THIS LINE
+}
+function checkDuplicates() {
+  const items = segments.map(s => s.trim().toLowerCase()); // clean & lowercase
+  const duplicates = items.filter((item, i) => item && items.indexOf(item) !== i);
+
+  const div = document.getElementById("colorInputs");
+  if(div.children.length !== segments.length) return; // safety check
+
+  for(let i=0; i<segments.length; i++){
+    let wrapper = div.children[i];
+
+    // remove old duplicate text if exists
+    const oldDup = wrapper.querySelector(".dupText");
+    if(oldDup) oldDup.remove();
+
+    // mark duplicate
+    const isDup = items.indexOf(items[i]) !== i;
+    if(isDup){
+      const dupText = document.createElement("span");
+      dupText.className = "dupText";
+      dupText.style.color = "#f44336";
+      dupText.style.fontSize = "10px";
+      dupText.innerHTML = 'Duplicate <i class="fa-solid fa-triangle-exclamation"></i>';
+      wrapper.appendChild(dupText);
+
+      // optional: highlight color input
+      const input = wrapper.querySelector("input[type=color]");
+      if(input) input.style.border = "2px solid #f44336";
+    } else {
+      const input = wrapper.querySelector("input[type=color]");
+      if(input) input.style.border = "";
+    }
+  }
+
+  // optional gray notif
+  // get unique duplicate words
+const uniqueDuplicates = [...new Set(duplicates)];
+
+// check if duplicates changed
+const isDifferent = JSON.stringify(uniqueDuplicates) !== JSON.stringify(lastDuplicates);
+
+if(uniqueDuplicates.length > 0 && isDifferent){
+  showNotification("You got a duplicate <i class='fa fa-exclamation-triangle'></i>");
+}
+
+// update last duplicates
+lastDuplicates = uniqueDuplicates;
+}
+document.getElementById("optionsInput").oninput = updateOptions;
+// Confetti Pop
+function confettiPopLite(x, y) {
+  const colors = ["#f44336","#ff9800","#ffeb3b","#4caf50","#2196f3","#9c27b0"];
+  const total = 15; // way less, keeps it smooth
+
+  for (let i = 0; i < total; i++) {
+    const confetti = document.createElement("div");
+    confetti.style.position = "fixed";
+    confetti.style.width = "5px";
+    confetti.style.height = "5px";
+    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.left = x + "px";
+    confetti.style.top = y + "px";
+    confetti.style.borderRadius = "50%";
+    confetti.style.pointerEvents = "none";
+    confetti.style.zIndex = "3000";
+    document.body.appendChild(confetti);
+
+    const angle = Math.random() * 2 * Math.PI;
+    const speed = Math.random() * 8 + 6; // slower than mega-burst
+    const gravity = 0.4 + Math.random() * 0.3;
+    let vx = Math.cos(angle) * speed;
+    let vy = Math.sin(angle) * speed;
+    let opacity = 1;
+
+    function animate() {
+      vy += gravity * 0.3;
+      confetti.style.left = (confetti.offsetLeft + vx) + "px";
+      confetti.style.top = (confetti.offsetTop + vy) + "px";
+      opacity -= 0.02;
+      confetti.style.opacity = opacity;
+      if (opacity > 0) requestAnimationFrame(animate);
+      else confetti.remove();
+    }
+    animate(); 
+  }
+}
+
+/* ---------------------------
+  SPIN WHEEL
+--------------------------- */
+function spin() {
+console.log("SPIN CLICKED");
+  if (spinning || segments.length < 2) return;
+
+  buttonSound.currentTime = 0;
+  if(!isMuted){
+  buttonSound.currentTime = 0;
+  buttonSound.play();
+}
+
+  spinning = true;
+
+  // RANDOM START POSITION (THIS IS YOUR IDEA)
+  angle = Math.random() * Math.PI * 2;
+
+  // RANDOM SPEED
+  velocity = Math.random() * 0.3 + 0.4;
+
+  lastTickIndex = -1;
+
+  function animate() {
+    angle += velocity;
+    velocity *= 0.988; // smooth slowdown
+
+    // SIMPLE TICK (no weird math)
+    const arc = 2 * Math.PI / segments.length;
+    let normalized = (angle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    let currentIndex = Math.floor(normalized / arc);
+
+    if (currentIndex !== lastTickIndex) {
+      tickSound.currentTime = 0;
+      if(!isMuted){
+  tickSound.currentTime = 0;
+  tickSound.play();
+}
+      lastTickIndex = currentIndex;
+    }
+
+    drawWheel();
+
+    if (velocity < 0.002) {
+  velocity = 0; // snap stop (clean finish)
+  spinning = false;
+  determineWinner();
+  return;
+}
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+}
+/* ---------------------------
+  DETERMINE WINNER
+--------------------------- */
+const modal=document.getElementById("modal");
+function determineWinner() {
+  const n = segments.length;
+  if (n === 0) return;
+
+  pointerAngle = 0;
+  drawWheel();
+
+  const arc = 2 * Math.PI / n;
+  let adj = (angle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  let pointer = (adj + Math.PI / 2) % (2 * Math.PI);
+  let index = Math.floor((2 * Math.PI - pointer) / arc);
+  index = index % segments.length;   // ← ADD THIS LINE
+  lastWinnerIndex = index;
+  const lockedIndex = index; // LOCK IT
+  
+  const rect = document.querySelector(".modalContent").getBoundingClientRect();
+const cx = rect.left + rect.width / 2;
+const cy = rect.top + rect.height / 2;
+confettiPopLite(cx, cy); // one smooth pop
+
+  document.getElementById("winnerText").innerText = "Result: " + segments[index];
+  addToHistory(segments[index]);
+  modal.style.display = "flex";
+  
+  const removeBtn = document.getElementById("removeBtn");
+
+if (eliminateMode) {
+  removeBtn.style.display = "none"; // hide it
+} else {
+  removeBtn.style.display = "inline-block"; // normal mode
+}
+  
+  if (eliminateMode && segments.length > 1) {
+  spinning = true; // block spinning during elimination
+
+  setTimeout(() => {
+    // remove the CORRECT one (locked)
+    segments.splice(lockedIndex, 1);
+    colors.splice(lockedIndex, 1);
+
+    document.getElementById("optionsInput").value = segments.join("\n");
+    updateOptions();
+
+    spinning = false; // allow spin again
+
+    if (segments.length === 1) {
+      showNotification('<i class="fa-solid fa-trophy"></i> FINAL WINNER: ' + segments[0]);
+    }
+  }, 500); // faster = less abuse
+}
+
+  confettiPopLite(cx, cy);
+  setTimeout(() => confettiPopLite(cx, cy), 150);
+  setTimeout(() => confettiPopLite(cx, cy), 300);
+  
+  for(let i=0; i<3; i++){
+  setTimeout(() => confettiPopLite(cx, cy), i*200);
+  }
+}
+
+/* ---------------------------
+  EVENT HANDLERS
+--------------------------- */
+document.getElementById("optionsInput").oninput=updateOptions;
+document.getElementById("outlineColor").oninput=()=>{ drawWheel(); saveState(); };
+document.getElementById("centerColor").oninput=()=>{ drawWheel(); saveState(); };
+document.getElementById("centerSize").oninput=()=>{ drawWheel(); saveState(); };
+document.getElementById("toggleOutline").onchange=()=>{ drawWheel(); saveState(); };
+
+document.getElementById("shuffleBtn").onclick=()=>{ segments.sort(()=>Math.random()-0.5); document.getElementById("optionsInput").value=segments.join("\n"); updateOptions(); };
+document.getElementById("sortAZBtn").onclick=()=>{ segments.sort(); document.getElementById("optionsInput").value=segments.join("\n"); updateOptions(); };
+document.getElementById("sortZABtn").onclick=()=>{ segments.sort().reverse(); document.getElementById("optionsInput").value=segments.join("\n"); updateOptions(); };
+document.getElementById("clearBtn").onclick=()=>{
+  if(confirm("Clear all entries?")){ segments=[]; colors=[]; document.getElementById("optionsInput").value=""; updateOptions(); }
+};
+
+const speedSlider = document.getElementById("spinSpeed");
+const speedLabel = document.getElementById("speedLabel");
+
+function updateSpeedLabel() {
+  const val = speedSlider.value;
+
+  if(val == 1) speedLabel.innerHTML = '<i class="fa-solid fa-hourglass-start"></i> Very Slow';
+  else if(val == 2) speedLabel.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> Slow';
+  else if(val == 3) speedLabel.innerHTML = '<i class="fa-solid fa-gauge"></i> Normal';
+  else if(val == 4) speedLabel.innerHTML = '<i class="fa-solid fa-bolt"></i> Fast';
+  else speedLabel.innerHTML = '<i class="fa-solid fa-rocket"></i> Very Fast';
+}
+
+speedSlider.addEventListener("input", updateSpeedLabel);
+updateSpeedLabel();
+document.getElementById("spinAgainBtn").onclick = () => {
+  modal.style.display = "none";
+  spin();
+};
+
+document.getElementById("removeBtn").onclick = () => {
+  if(lastWinnerIndex !== null){
+    segments.splice(lastWinnerIndex, 1);
+    colors.splice(lastWinnerIndex, 1);
+    document.getElementById("optionsInput").value = segments.join("\n");
+    updateOptions();
+  }
+  modal.style.display = "none";
+};
+
+document.getElementById("closeBtn").onclick = () => {
+  modal.style.display = "none";
+};
+
+document.getElementById("saveBtn").onclick = () => {
+  let name = prompt("Name this wheel:");
+  if(!name) return;
+
+  let wheels = getSavedWheels();
+
+  wheels.push({
+    name,
+    segments: [...segments],
+    colors: [...colors],
+    outlineColor: document.getElementById("outlineColor").value,
+    showOutline: document.getElementById("toggleOutline").checked,
+    centerColor: document.getElementById("centerColor").value,
+    centerSize: document.getElementById("centerSize").value
+  });
+
+  setSavedWheels(wheels);
+  renderSavedWheels();
+  showNotification('<i class="fa-solid fa-floppy-disk"></i> Saved as ' + name);
+};
+
+function setSavedWheels(data){
+  localStorage.setItem("savedWheels", JSON.stringify(data));
+}
+document.getElementById("randomColorsBtn").onclick = () => {
+    colors = segments.map(() => randomColor()); // new random color for each segment
+    // Update the color inputs panel
+    const div = document.getElementById("colorInputs");
+    div.querySelectorAll("input[type=color]").forEach((input, i) => input.value = colors[i]);
+    drawWheel();
+    saveState(); // keep your save system working
+    showNotification('<i class="fa-solid fa-palette"></i> Colors randomized!');
+};
+const eliminateBtn = document.getElementById("eliminateModeBtn");
+
+if (eliminateBtn) {
+  eliminateBtn.onclick = () => {
+    eliminateMode = !eliminateMode;
+
+    eliminateBtn.innerHTML = eliminateMode
+  ? '<i class="fa fa-bomb"></i> Eliminate: ON'
+  : '<i class="fa fa-bomb"></i> Eliminate: OFF';
+
+    showNotification(
+  eliminateMode
+    ? '<i class="fa fa-bomb"></i> Eliminate ON'
+    : '<i class="fa fa-ban"></i> Eliminate OFF'
+    );
+  };
+}
+const modsModal = document.getElementById("modsModal");
+
+document.getElementById("moreModsBtn").onclick = () => {
+  modsModal.style.display = "flex";
+};
+
+document.getElementById("closeModsBtn").onclick = () => {
+  modsModal.style.display = "none";
+};
+document.getElementById("removeDuplicatesBtn").onclick = () => {
+  segments = [...new Set(segments)];
+
+  document.getElementById("optionsInput").value = segments.join("\n");
+
+  updateOptions();
+
+  showNotification('Duplicates removed <i class="fa-solid fa-wand-magic-sparkles"></i>');
+};
+/* ---------------------------
+  SAVE SYSTEM
+--------------------------- */
+function getSavedWheels(){
+  return JSON.parse(localStorage.getItem("savedWheels") || "[]");
+}
+
+function setSavedWheels(data){
+  localStorage.setItem("savedWheels", JSON.stringify(data));
+}
+/* ---------------------------
+  HISTORY
+--------------------------- */
+function addToHistory(result){
+  // get history array
+  let history = JSON.parse(localStorage.getItem("spinHistory") || "[]");
+  history.unshift(result); // newest on top
+  if(history.length > 20) history.pop(); // keep last 20
+  localStorage.setItem("spinHistory", JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory(){
+  const panel = document.getElementById("historyPanel");
+  let history = JSON.parse(localStorage.getItem("spinHistory") || "[]");
+  
+  panel.innerHTML = ""; // clear
+
+  if(history.length === 0){
+    panel.innerHTML = "No spins yet.";
+    return;
+  }
+
+  // create each item with delete button
+  history.forEach((res, i)=>{
+    const div = document.createElement("div");
+    div.style.display = "flex";
+    div.style.justifyContent = "space-between";
+    div.style.alignItems = "center";
+    div.style.marginBottom = "4px";
+    div.style.padding = "4px 6px";
+    div.style.borderRadius = "6px";
+    div.style.background = "var(--color-panel-bg)";
+
+    const span = document.createElement("span");
+    span.innerText = res;
+
+    const delBtn = document.createElement("button");
+    delBtn.innerHTML = '<i class="fa-solid fa-xmark" style="color:#f44336;"></i>';
+    delBtn.style.padding = "2px 6px";
+    delBtn.style.fontSize = "12px";
+    delBtn.style.cursor = "pointer";
+    delBtn.onclick = ()=>{
+      history.splice(i,1);
+      localStorage.setItem("spinHistory", JSON.stringify(history));
+      renderHistory();
+    };
+
+    div.appendChild(span);
+    div.appendChild(delBtn);
+    panel.appendChild(div);
+  });
+
+  // auto-scroll to top (newest first)
+  panel.scrollTop = 0;
+}
+
+// Clear All button
+document.getElementById("clearHistoryBtn").onclick = ()=>{
+  if(confirm("Clear all spin history?")){
+    localStorage.setItem("spinHistory", JSON.stringify([]));
+    renderHistory();
+  }
+};
+
+// render on load
+renderHistory();
+/* ---------------------------
+  SAVE STATE
+--------------------------- */
+function saveState(){
+  localStorage.setItem("autosaveWheel",JSON.stringify({
+    segments, colors,
+    outline: document.getElementById("outlineColor").value,
+    showOutline: document.getElementById("toggleOutline").checked,
+    centerColor: document.getElementById("centerColor").value,
+    centerSize: document.getElementById("centerSize").value
+  }));
+}
+
+/* ---------------------------
+  LOAD STATE
+--------------------------- */
+function loadState(){
+  const data = JSON.parse(localStorage.getItem("autosaveWheel"));
+  if(data && data.segments?.length){
+    segments=data.segments;
+    colors=data.colors;
+    document.getElementById("optionsInput").value = segments.join("\n");
+    document.getElementById("outlineColor").value = data.outline||"#000";
+    document.getElementById("toggleOutline").checked = data.showOutline ?? true;
+    document.getElementById("centerColor").value = data.centerColor||"#fff";
+    document.getElementById("centerSize").value = data.centerSize||60;
+  } else {
+    segments=["Apple","Banana","Kiwi","Grape","Orange"];
+    colors=["#f44336","#ff9800","#4caf50","#9c27b0","#2196f3"];
+    document.getElementById("optionsInput").value = segments.join("\n");
+  }
+  updateOptions();
+}
+
+/* ---------------------------
+  EXPORT / IMPORT
+--------------------------- */
+const importPanel = document.getElementById("importPanel");
+const importInput = document.getElementById("importInput");
+const importLoadBtn = document.getElementById("importLoadBtn");
+
+document.getElementById("exportBtn").onclick = () => {
+  const data = JSON.stringify({
+    segments,
+    colors,
+    outlineColor: document.getElementById("outlineColor").value,
+    showOutline: document.getElementById("toggleOutline").checked,
+    centerColor: document.getElementById("centerColor").value,
+    centerSize: document.getElementById("centerSize").value
+  });
+  navigator.clipboard.writeText(data)
+  .then(() => showNotification('<i class="fa fa-check"></i> Wheel JSON copied!'));
+};
+
+document.getElementById("importBtn").onclick = ()=>{
+  importPanel.style.display = importPanel.style.display==="none"?"block":"none";
+  importInput.value = ""; importInput.focus();
+};
+
+importLoadBtn.onclick = ()=>{
+  try{
+    const obj = JSON.parse(importInput.value);
+    segments = obj.segments || [];
+    colors = obj.colors || [];
+    document.getElementById("optionsInput").value = segments.join("\n");
+    document.getElementById("outlineColor").value = obj.outlineColor || "#000";
+    document.getElementById("toggleOutline").checked = obj.showOutline ?? true;
+    document.getElementById("centerColor").value = obj.centerColor || "#fff";
+    document.getElementById("centerSize").value = obj.centerSize || 60;
+    updateOptions();
+    importPanel.style.display = "none";
+    showNotification('<i class="fa fa-check"></i> JSON Loaded!');
+  } catch(e){
+    alert("Invalid JSON!");
+  }
+};
+function renderSavedWheels(){
+  const panel = document.getElementById("savedPanel");
+  const wheels = getSavedWheels();
+
+  if(wheels.length === 0){
+    panel.innerHTML = "No saved wheels.";
+    return;
+  }
+
+  panel.innerHTML = "";
+
+  wheels.forEach((w, i) => {
+    const div = document.createElement("div");
+    div.style.marginBottom = "10px";
+
+    div.innerHTML = `
+      <b>${w.name}</b><br>
+      <button onclick="loadWheel(${i})"><i class="fa-solid fa-folder-open"></i> Load</button>
+<button onclick="renameWheel(${i})"><i class="fa-solid fa-pen"></i> Rename</button>
+<button onclick="deleteWheel(${i})"><i class="fa-solid fa-trash"></i> Delete</button>
+    `;
+
+    panel.appendChild(div);
+  });
+}
+function renderMods(){
+  const list = document.getElementById("modsList");
+  list.innerHTML = "";
+
+  const mods = [
+    { key: "colorfulPointer", name: "🎨 Colorful Pointer" }
+  ];
+
+  mods.forEach(mod => {
+    const div = document.createElement("div");
+
+    const btn = document.createElement("button");
+    btn.innerText = modStates[mod.key] ? "Disable Mod" : "Enable Mod";
+
+    btn.onclick = () => {
+  modStates[mod.key] = !modStates[mod.key];
+
+  localStorage.setItem(
+    "mod_" + mod.key,
+    JSON.stringify(modStates[mod.key])
+  );
+
+  showNotification(
+    mod.name + (modStates[mod.key] ? " Enabled " : " Disabled ")
+  );
+
+  renderMods(); // refresh button text
+};
+
+    div.innerHTML = `<b>${mod.name}</b><br>`;
+    div.appendChild(btn);
+
+    list.appendChild(div);
+  });
+}
+function loadWheel(i){
+  const w = getSavedWheels()[i];
+
+  segments = [...w.segments];
+  colors = [...w.colors];
+
+  document.getElementById("optionsInput").value = segments.join("\n");
+  document.getElementById("outlineColor").value = w.outlineColor;
+  document.getElementById("toggleOutline").checked = w.showOutline;
+  document.getElementById("centerColor").value = w.centerColor;
+  document.getElementById("centerSize").value = w.centerSize;
+
+  updateOptions();
+  showNotification('<i class="fa-solid fa-folder-open"></i> Loaded ' + w.name);
+  }
+function deleteWheel(i){
+  let wheels = getSavedWheels();
+
+  if(!confirm("Delete this wheel?")) return;
+
+  wheels.splice(i,1);
+  setSavedWheels(wheels);
+  renderSavedWheels();
+}
+function renameWheel(i){
+  let wheels = getSavedWheels();
+  let newName = prompt("Rename wheel:", wheels[i].name);
+  if(!newName) return;
+
+  wheels[i].name = newName;
+  setSavedWheels(wheels);
+  renderSavedWheels();
+}
+/* ---------------------------
+  INIT
+--------------------------- */
+loadState();
+drawWheel();
+renderSavedWheels();
+renderHistory();
+renderMods();
+/* ---------------------------
+  IDLE LOOP
+--------------------------- */
+function idleLoop(){
+  if(!spinning){
+    drawWheel();
+  }
+  requestAnimationFrame(idleLoop);
+}
+idleLoop();
+
+canvas.onclick = spin;  
+document.getElementById("spinBtn").onclick = spin;
+document.getElementById("generateBtn").onclick = () => {
+  const keys = Object.keys(wordCategories);
+  const chosenCategory = keys[Math.floor(Math.random() * keys.length)];
+  const pool = [...wordCategories[chosenCategory]];
+
+  // shuffle
+  pool.sort(() => Math.random() - 0.5);
+
+  // random amount (5–35)
+  const count = Math.floor(Math.random() * 31) + 5;
+
+  const selected = pool.slice(0, count);
+
+  // put into textarea
+  document.getElementById("optionsInput").value = selected.join("\n");
+
+  updateOptions();
+  checkDuplicates();
+
+  showNotification('<i class="fa-solid fa-dice"></i> Generated ' + count + ' ' + chosenCategory + '!');
+};
+const shareBtn = document.getElementById("shareBtn");
+if (shareBtn) {
+  shareBtn.onclick = () => {
+    const text = "🎡 Try this Spin The Wheel!";
+    const url = window.location.href;
+
+    if(navigator.share){
+      navigator.share({
+        title: "Spin The Wheel",
+        text: text,
+        url: url
+      });
+    } else {
+      navigator.clipboard.writeText(text + " " + url);
+      showNotification('<i class="fa-solid fa-clipboard"></i> Link copied!');
+    }
+  };
+}
+
+const muteBtn = document.getElementById("muteBtn");
+if (muteBtn) {
+  muteBtn.onclick = () => {
+    isMuted = !isMuted;
+
+    muteBtn.innerHTML = isMuted
+  ? '<i class="fa-solid fa-volume-xmark"></i> Sound OFF'
+  : '<i class="fa-solid fa-volume-high"></i> Sound ON';
+
+    if(isMuted){
+      // 🔥 STOP ALL CURRENT SOUNDS
+      tickSound.pause();
+      tickSound.currentTime = 0;
+
+      buttonSound.pause();
+      buttonSound.currentTime = 0;
+    }
+
+    showNotification(
+  isMuted
+    ? '<i class="fa-solid fa-volume-xmark"></i> Muted'
+    : '<i class="fa-solid fa-volume-high"></i> Unmuted'
+);
+  };
+}
+const menuModal = document.getElementById("menuModal");
+
+document.getElementById("menuBtn").onclick = () => {
+  menuModal.style.display = "flex";
+};
+
+document.getElementById("closeMenuBtn").onclick = () => {
+  menuModal.style.display = "none";
+};
+</script>
+</body>
+</html>
